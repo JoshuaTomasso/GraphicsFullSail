@@ -137,6 +137,11 @@ int MyMinimum(int a, int b, int c) {
     return min;
 }
 
+int MyMinimum(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
 int MyMaximum(int a, int b, int c) {
     int max = a;
     if (b > max) max = b;
@@ -149,4 +154,68 @@ float Clamp(float val, float minVal, float maxVal)
     if (val < minVal) return minVal;
     if (val > maxVal) return maxVal;
     return val;
+}
+
+Float4 CrossProduct(const Float4& a, const Float4& b)
+{
+    return {
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x,
+        0.0f
+    };
+}
+
+float DotProduct(const Float4& a, const Float4& b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+float Vec3Length(const Float4& v)
+{
+    return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
+Float4 NormalizeVec3(const Float4& v)
+{
+    float len = Vec3Length(v);
+    if (len == 0.0f) return { 0, 0, 0, 0 };
+    return { v.x / len, v.y / len, v.z / len, 0.0f };
+}
+
+float Saturate(float val)
+{
+    return Clamp(val, 0.0f, 1.0f);
+}
+
+unsigned int ModulateColors(unsigned int a, unsigned int b)
+{
+    unsigned char aR = (a >> 16) & 0xFF;
+    unsigned char aG = (a >> 8) & 0xFF;
+    unsigned char aB = (a >> 0) & 0xFF;
+
+    unsigned char bR = (b >> 16) & 0xFF;
+    unsigned char bG = (b >> 8) & 0xFF;
+    unsigned char bB = (b >> 0) & 0xFF;
+
+    return 0xFF000000 |
+        ((aR * bR / 255) << 16) |
+        ((aG * bG / 255) << 8) |
+        ((aB * bB / 255) << 0);
+}
+
+unsigned int CombineColors(unsigned int a, unsigned int b)
+{
+    unsigned char aR = (a >> 16) & 0xFF;
+    unsigned char aG = (a >> 8) & 0xFF;
+    unsigned char aB = (a >> 0) & 0xFF;
+
+    unsigned char bR = (b >> 16) & 0xFF;
+    unsigned char bG = (b >> 8) & 0xFF;
+    unsigned char bB = (b >> 0) & 0xFF;
+
+    return 0xFF000000 |
+        (MyMinimum(255, aR + bR) << 16) |
+        (MyMinimum(255, aG + bG) << 8) |
+        (MyMinimum(255, aB + bB) << 0);
 }

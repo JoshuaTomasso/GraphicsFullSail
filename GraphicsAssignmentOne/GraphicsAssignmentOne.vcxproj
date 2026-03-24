@@ -18,6 +18,25 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Defines.h" />
+    <ClInclude Include="fire_02.h" />
+    <ClInclude Include="greendragon.h" />
+    <ClInclude Include="MyMath.h" />
+    <ClInclude Include="Rasterization_Functions.h" />
+    <ClInclude Include="RasterSurface.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="StoneHenge.h" />
+    <ClInclude Include="StoneHenge_Texture.h" />
+    <ClInclude Include="tiles_12.h" />
+    <ClInclude Include="VertexData.h" />
+    <ClInclude Include="XTime.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GraphicsAssignmentOne.cpp" />
+    <ClCompile Include="RasterSurface.cpp" />
+    <ClCompile Include="XTime.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -126,25 +145,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\..\OneDrive\Desktop\Week_1_Handout\Class Utilities\RasterSurface.cpp" />
-    <ClCompile Include="GraphicsAssignmentOne.cpp" />
-    <ClCompile Include="XTime.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\OneDrive\Desktop\Week_1_Handout\Class Utilities\RasterSurface.h" />
-    <ClInclude Include="Defines.h" />
-    <ClInclude Include="fire_02.h" />
-    <ClInclude Include="greendragon.h" />
-    <ClInclude Include="MyMath.h" />
-    <ClInclude Include="Rasterization_Functions.h" />
-    <ClInclude Include="Shader.h" />
-    <ClInclude Include="StoneHenge.h" />
-    <ClInclude Include="StoneHenge_Texture.h" />
-    <ClInclude Include="tiles_12.h" />
-    <ClInclude Include="VertexData.h" />
-    <ClInclude Include="XTime.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

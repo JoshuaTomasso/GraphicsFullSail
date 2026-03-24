@@ -47,3 +47,12 @@ struct Star
 {
     Float4 position;
 };
+
+struct LitVertex
+{
+    Float4 pos;
+    Float4 normal;
+    float u, v;
+    unsigned int color;
+};
+

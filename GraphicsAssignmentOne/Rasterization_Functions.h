@@ -162,21 +162,24 @@ unsigned int SampleStonehengeTexture(float u, float v)
     return C2C(StoneHenge_pixels[index]);
 }
 
+
 unsigned int (*ActiveTextureSampler)(float, float) = SampleStonehengeTexture; // default
 
 
-void DrawFilledTriangle(const Float4WithColor& v0, const Float4WithColor& v1, const Float4WithColor& v2)
+void DrawFilledTriangle(const LitVertex& v0, const LitVertex& v1, const LitVertex& v2)
 {
-    Float4WithColor p0 = v0;
-    Float4WithColor p1 = v1;
-    Float4WithColor p2 = v2;
+    // VertexShader call
+    LitVertex p0 = v0;
+    LitVertex p1 = v1;
+    LitVertex p2 = v2;
 
     if (VertexShader)
     {
-        VertexShader(p0.pos);
-        VertexShader(p1.pos);
-        VertexShader(p2.pos);
+        VertexShader(*(Float4*)&p0);
+        VertexShader(*(Float4*)&p1);
+        VertexShader(*(Float4*)&p2);
     }
+
 
     ScreenXY s0 = NDCtoScreen(p0.pos);
     ScreenXY s1 = NDCtoScreen(p1.pos);
@@ -221,8 +224,8 @@ void DrawFilledTriangle(const Float4WithColor& v0, const Float4WithColor& v1, co
                 float w_recip1 = 1.0f / p1.pos.w;
                 float w_recip2 = 1.0f / p2.pos.w;
 
-                float u = (w0 * p0.u * w_recip0 + w1 * p1.u * w_recip1 + w2 * p2.u * w_recip2);
-                float v = (w0 * p0.v * w_recip0 + w1 * p1.v * w_recip1 + w2 * p2.v * w_recip2);
+                float u = w0 * p0.u * w_recip0 + w1 * p1.u * w_recip1 + w2 * p2.u * w_recip2;
+                float v = w0 * p0.v * w_recip0 + w1 * p1.v * w_recip1 + w2 * p2.v * w_recip2;
                 float wSum = (w0 * w_recip0 + w1 * w_recip1 + w2 * w_recip2);
 
                 u /= wSum;
@@ -277,59 +280,73 @@ void DrawStonehengeModel()
 {
     for (int i = 0; i < 2532; i += 3)
     {
-        const Float4WithColor& v0 = stoneVerts[stoneIndices[i + 0]];
-        const Float4WithColor& v1 = stoneVerts[stoneIndices[i + 1]];
-        const Float4WithColor& v2 = stoneVerts[stoneIndices[i + 2]];
+        const LitVertex& v0 = stoneVerts[stoneIndices[i + 0]];
+        const LitVertex& v1 = stoneVerts[stoneIndices[i + 1]];
+        const LitVertex& v2 = stoneVerts[stoneIndices[i + 2]];
 
-        DrawFilledTriangle(v0, v1, v2);
+        DrawFilledTriangle(v0, v1, v2); // NOT casted
     }
 }
 
-// === DrawGround ===
-void DrawGround()
+
+void DrawGroundGridTextured()
 {
-    const int segments = 64;
-    const float radius = 3.0f;
+    const int radialSegments = 32;
+    const int concentricRings = 8;
+    const float maxRadius = 2.5f;
 
-    Float4WithColor rawCenter = { {0, -0.8f, 0, 1}, 0xFFFFFFFF, 0.5f, 0.5f };
+    // Define UV crop region inside the texture (e.g., center 50% of texture)
+    const float uvMin = 0.25f;
+    const float uvMax = 0.75f;
 
+    // Build center vertex
+    Float4WithColor center = {
+         { 0.0f, 0.0f, 0.0f, 1.0f },
+         0xFFFFFFFF,
+         (uvMin + uvMax) * 0.5f, (uvMin + uvMax) * 0.5f
+    };
 
-
-    for (int i = 0; i < segments; ++i)
+    for (int ring = 0; ring < concentricRings; ++ring)
     {
-        float angle0 = (2.0f * 3.14159f * i) / segments;
-        float angle1 = (2.0f * 3.14159f * (i + 1)) / segments;
+        float innerRadius = (maxRadius * ring) / concentricRings;
+        float outerRadius = (maxRadius * (ring + 1)) / concentricRings;
 
-        Float4WithColor rawV0 = {
-            { radius * cosf(angle0), -0.8f, radius * sinf(angle0), 1 },
-            0xFFFFFFFF,
-            0.5f + 0.5f * cosf(angle0),
-            0.5f + 0.5f * sinf(angle0)
-        };
-
-
-        Float4WithColor rawV1 = {
-            { radius * cosf(angle1), -0.8f, radius * sinf(angle1), 1 },
-            0xFFFFFFFF,
-            0.5f + 0.5f * cosf(angle1),
-            0.5f + 0.5f * sinf(angle1)
-        };
-
-
-        Float4WithColor center = rawCenter;
-        Float4WithColor v0 = rawV0;
-        Float4WithColor v1 = rawV1;
-
-        if (VertexShader)
+        for (int i = 0; i < radialSegments; ++i)
         {
-            VertexShader(center.pos);
-            VertexShader(v0.pos);
-            VertexShader(v1.pos);
-        }
+            float angle0 = (2.0f * 3.14159f * i) / radialSegments;
+            float angle1 = (2.0f * 3.14159f * (i + 1)) / radialSegments;
 
-        if (std::isfinite(center.pos.x) && std::isfinite(v0.pos.x) && std::isfinite(v1.pos.x))
-        {
-            DrawFilledTriangle(center, v0, v1);
+            LitVertex v0 = {
+                { cosf(angle0) * innerRadius, 0.0f, sinf(angle0) * innerRadius, 1.0f },
+                { 0.0f, 1.0f, 0.0f, 0.0f },
+                0.25f + 0.25f * cosf(angle0) * (innerRadius / maxRadius),
+                0.25f + 0.25f * sinf(angle0) * (innerRadius / maxRadius)
+            };
+
+            LitVertex v1 = {
+                { cosf(angle1) * innerRadius, 0.0f, sinf(angle1) * innerRadius, 1.0f },
+                { 0.0f, 1.0f, 0.0f, 0.0f },
+                0.25f + 0.25f * cosf(angle1) * (innerRadius / maxRadius),
+                0.25f + 0.25f * sinf(angle1) * (innerRadius / maxRadius)
+            };
+
+            LitVertex v2 = {
+                { cosf(angle0) * outerRadius, 0.0f, sinf(angle0) * outerRadius, 1.0f },
+                { 0.0f, 1.0f, 0.0f, 0.0f },
+                0.25f + 0.25f * cosf(angle0) * (outerRadius / maxRadius),
+                0.25f + 0.25f * sinf(angle0) * (outerRadius / maxRadius)
+            };
+
+            LitVertex v3 = {
+                { cosf(angle1) * outerRadius, 0.0f, sinf(angle1) * outerRadius, 1.0f },
+                { 0.0f, 1.0f, 0.0f, 0.0f },
+                0.25f + 0.25f * cosf(angle1) * (outerRadius / maxRadius),
+                0.25f + 0.25f * sinf(angle1) * (outerRadius / maxRadius)
+            };
+
+            // Draw two triangles per segment to make a quad (v0-v2-v3, v0-v3-v1)
+            DrawFilledTriangle(v0, v2, v3);
+            DrawFilledTriangle(v0, v3, v1);
         }
     }
 }
@@ -452,7 +469,7 @@ void LabThreeStuff(XTime& timer, Float4* gridVerts, int gridVertCount, Float4Wit
     SV_WorldMatrix = worldCube;
     for (int i = 0; i < cubeVertCount; i += 3)
     {
-        DrawFilledTriangle(cubeVertsUV[i], cubeVertsUV[i + 1], cubeVertsUV[i + 2]);
+       // DrawFilledTriangle(cubeVertsUV[i], cubeVertsUV[i + 1], cubeVertsUV[i + 2]);
     }
 
     PixelShader = nullptr;
@@ -460,6 +477,8 @@ void LabThreeStuff(XTime& timer, Float4* gridVerts, int gridVertCount, Float4Wit
 
 void LabFourStuff(XTime& timer)
 {
+    ActiveTextureSampler = SampleStonehengeTexture;
+
     static bool starsInitialized = false;
     static bool modelInitialized = false;
     static bool groundInitialized = false;
@@ -480,7 +499,7 @@ void LabFourStuff(XTime& timer)
 
     // === Fixed Camera Looking at Origin ===
     Matrix4x4 viewRotation = CreateRotationXMatrix(18.0f * DEG2RAD); // Slight downward tilt
-    Matrix4x4 viewTranslation = CreateTranslationMatrix(0.0f, 0.25f, -3.5f); // Pull back to fit model
+    Matrix4x4 viewTranslation = CreateTranslationMatrix(0.0f, 1.0f, -2.5f); // Pull back to fit model
 
     Matrix4x4 viewCombined;
     MatrixMatrixMultiply(viewCombined, viewRotation, viewTranslation);
@@ -503,12 +522,11 @@ void LabFourStuff(XTime& timer)
     SV_WorldMatrix = CreateIdentityMatrix();
     DrawStarField(view, proj);
 
-    // === Draw Ground ===
-    SV_WorldMatrix = CreateTranslationMatrix(0.0f, 0.0f, -0.9f);
-    DrawGround();
+    SV_WorldMatrix = CreateIdentityMatrix();
+    DrawGroundGridTextured();
 
     // === Draw Stonehenge ===
-    Matrix4x4 stoneTranslation = CreateTranslationMatrix(0.0f, -0.8f, -0.9f);
+    Matrix4x4 stoneTranslation = CreateTranslationMatrix(0.0f, 0.0f, -0.0f);
     Matrix4x4 scale = CreateScaleMatrix(0.9f, 0.9f, 0.9f);
     Matrix4x4 worldCombined;
     MatrixMatrixMultiply(worldCombined, scale, stoneTranslation); // Scale * Translate

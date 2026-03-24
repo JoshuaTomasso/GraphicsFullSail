@@ -10,7 +10,7 @@
 Float4 gridVerts[44];
 Float4WithColor cubeVertsUV[36];
 Star starField[3000];
-Float4WithColor stoneVerts[1457];
+LitVertex stoneVerts[1457];
 unsigned int stoneIndices[2532];
 constexpr int GROUND_SEGMENTS = 64;
 Float4WithColor groundVerts[GROUND_SEGMENTS + 2];
@@ -112,27 +112,63 @@ void InitializeStars()
 
 void InitializeStonehengeData()
 {
+    // === Step 1: Initialize positions, UVs, zero normals ===
     for (int i = 0; i < 1457; ++i)
     {
         const OBJ_VERT& vert = StoneHenge_data[i];
 
-        Float4WithColor v;
-        v.pos.x = vert.pos[0] * 0.1f; // scale position
-        v.pos.y = vert.pos[1] * 0.1f;
-        v.pos.z = vert.pos[2] * 0.1f;
-        v.pos.w = 1.0f;
-
-        v.u = vert.uvw[0]; // don't scale UVs
+        LitVertex v;
+        v.pos = { vert.pos[0] * 0.1f, vert.pos[1] * 0.1f, vert.pos[2] * 0.1f, 1.0f }; // scaled pos
+        v.normal = { 0.0f, 0.0f, 0.0f, 0.0f }; // will accumulate from faces
+        v.u = vert.uvw[0];
         v.v = vert.uvw[1];
-
-        v.color = 0; // placeholder, we will use texture
+        v.color = 0; // to be set in vertex shader
 
         stoneVerts[i] = v;
     }
 
+    // === Step 2: Copy indices ===
     for (int i = 0; i < 2532; ++i)
     {
         stoneIndices[i] = StoneHenge_indicies[i];
+    }
+
+    // === Step 3: Compute face normals and accumulate into vertex normals ===
+    for (int i = 0; i < 2532; i += 3)
+    {
+        int i0 = stoneIndices[i + 0];
+        int i1 = stoneIndices[i + 1];
+        int i2 = stoneIndices[i + 2];
+
+        Float4 p0 = stoneVerts[i0].pos;
+        Float4 p1 = stoneVerts[i1].pos;
+        Float4 p2 = stoneVerts[i2].pos;
+
+        // Edges
+        Float4 edge1 = { p1.x - p0.x, p1.y - p0.y, p1.z - p0.z, 0.0f };
+        Float4 edge2 = { p2.x - p0.x, p2.y - p0.y, p2.z - p0.z, 0.0f };
+
+        // Face normal (not normalized yet)
+        Float4 faceNormal = CrossProduct(edge1, edge2);
+
+        // Accumulate to each vertex
+        stoneVerts[i0].normal.x += faceNormal.x;
+        stoneVerts[i0].normal.y += faceNormal.y;
+        stoneVerts[i0].normal.z += faceNormal.z;
+
+        stoneVerts[i1].normal.x += faceNormal.x;
+        stoneVerts[i1].normal.y += faceNormal.y;
+        stoneVerts[i1].normal.z += faceNormal.z;
+
+        stoneVerts[i2].normal.x += faceNormal.x;
+        stoneVerts[i2].normal.y += faceNormal.y;
+        stoneVerts[i2].normal.z += faceNormal.z;
+    }
+
+    // === Step 4: Normalize all vertex normals ===
+    for (int i = 0; i < 1457; ++i)
+    {
+        stoneVerts[i].normal = NormalizeVec3(stoneVerts[i].normal);
     }
 }
 
